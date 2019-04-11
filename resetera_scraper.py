@@ -23,8 +23,8 @@ env.filters['regex_replace'] = regex_replace
 template_str = """~~~{{ title }}~~~
 
 {% for post in posts[:20] -%}
-{{ post['data-author'] }}: {{ post.div.article.text[:2000] | regex_replace('https?://\S+', '') | regex_replace('\n\n+', '\n') | trim }}
------
+{% if post.div.article.text | regex_replace('\n\n+', '\n') | length > 4 %}{{ post['data-author'] }}: {{ post.div.article.text[:2000] | regex_replace('https?://\S+', '') | regex_replace('\n\n+', '\n') | trim }}
+-----{% endif %}
 {% endfor %}
 !~END~!
 """
