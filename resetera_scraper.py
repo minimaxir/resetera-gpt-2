@@ -1,5 +1,6 @@
 import requests
 import time
+import re
 from jinja2 import Environment, select_autoescape
 from tqdm import trange
 from bs4 import BeautifulSoup
@@ -11,12 +12,18 @@ HEADERS = {
 }
 MAX_PAGES = 2
 
+# https://stackoverflow.com/a/12825283
+def regex_replace(s, find, replace):
+    return re.sub(find, replace, s)
+
+
 env = Environment()
+env.filters['regex_replace'] = regex_replace
 
 template_str = """~~~{{ title }}~~~
 
 {% for post in posts[:20] -%}
-{{ post['data-author'] }}: {{ post.div.article.text | trim }}
+{{ post['data-author'] }}: {{ post.div.article.text[:2000] | regex_replace('https?://\S+', '') | regex_replace('\n\n+', '\n') | trim }}
 -----
 {% endfor %}
 !~END~!
@@ -35,11 +42,14 @@ def process_thread(thread_url, template):
         bbcode.decompose()
 
     title = soup.find("h1", {"class": "p-title-value"}).text
-    if 'OT' in title:
+    if '|' in title:
         return None
     posts = soup.find_all("article", {"class": "message"})
 
-    text = template.render(title=title, posts=posts)
+    try:
+        text = template.render(title=title, posts=posts)
+    except:
+        return None
     return text
 
 with open('resetera_videogames.txt', 'w') as f:
