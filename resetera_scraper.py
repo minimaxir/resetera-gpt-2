@@ -10,7 +10,7 @@ BASE_URL = DOMAIN + "/forums/video-games.7/page-{}"
 HEADERS = {
     'User-Agent': 'ResetERA user minimaxir',
 }
-MAX_PAGES = 2
+MAX_PAGES = 1000
 
 # https://stackoverflow.com/a/12825283
 def regex_replace(s, find, replace):
@@ -20,13 +20,12 @@ def regex_replace(s, find, replace):
 env = Environment()
 env.filters['regex_replace'] = regex_replace
 
-template_str = """~~~{{ title }}~~~
+template_str = """~!~{{ title }}
 
-{% for post in posts[:20] -%}
+{% for post in posts[:10] -%}
 {% if post.div.article.text | regex_replace('\n\n+', '\n') | length > 4 %}{{ post['data-author'] }}: {{ post.div.article.text[:2000] | regex_replace('https?://\S+', '') | regex_replace('\n\n+', '\n') | trim }}
 -----{% endif %}
-{% endfor %}
-!~END~!
+{% endfor %}<|endoftext|>
 """
 
 template = env.from_string(template_str)
@@ -41,18 +40,17 @@ def process_thread(thread_url, template):
     for bbcode in bbcodes:
         bbcode.decompose()
 
-    title = soup.find("h1", {"class": "p-title-value"}).text
-    if '|' in title:
-        return None
-    posts = soup.find_all("article", {"class": "message"})
-
     try:
+        title = soup.find("h1", {"class": "p-title-value"}).text
+        if '|' in title:
+            return None
+        posts = soup.find_all("article", {"class": "message"})
         text = template.render(title=title, posts=posts)
     except:
         return None
     return text
 
-with open('resetera_videogames.txt', 'w') as f:
+with open('resetera_videogames_1000.txt', 'w') as f:
     for page in trange(1, MAX_PAGES+1):
         url = BASE_URL.format(page)
         req = requests.get(url, headers=HEADERS)
